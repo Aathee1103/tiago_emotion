@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CycloneDDS xmlns="https://cyclonedds.io/xml">
+  <Domain Id="any">
+    <General>
+      <Interfaces>
+        <NetworkInterface name="wlp9s0"/>
+        <NetworkInterface address="192.168.1.75"/>
+      </Interfaces>
+      <AllowMulticast>default</AllowMulticast>
+    </General>
+    <Discovery>
+      <ParticipantIndex>auto</ParticipantIndex>
+      <MaxAutoParticipantIndex>100</MaxAutoParticipantIndex>
+      <Peers>
+        <Peer Address="192.168.1.175"/>
+      </Peers>
+    </Discovery>
+  </Domain>
+</CycloneDDS>
+
+
+<?xml version="1.0" encoding="UTF-8"?>
+<CycloneDDS xmlns="https://cyclonedds.io/xml">
+  <Domain Id="any">
+    <General>
+      <Interfaces>
+        <NetworkInterface name="wlp9s0"/>
+      </Interfaces>
+      <AllowMulticast>true</AllowMulticast>
+    </General>
+  </Domain>
+</CycloneDDS>
+
+<?xml version="1.0" encoding="UTF-8"?>
+<CycloneDDS xmlns="https://cyclonedds.io/xml">
+  <Domain Id="any">
+    <General>
+      <Interfaces>
+        <NetworkInterface name="wlp9s0"/>
+      </Interfaces>
+      <AllowMulticast>default</AllowMulticast>
+    </General>
+
+    <Discovery>
+      <ParticipantIndex>auto</ParticipantIndex>
+      <MaxAutoParticipantIndex>100</MaxAutoParticipantIndex>
+
+      <Peers>
+        <Peer Address="192.168.1.175"/>
+      </Peers>
+    </Discovery>
+  </Domain>
+</CycloneDDS>

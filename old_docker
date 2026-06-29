@@ -1,0 +1,195 @@
+FROM ros:humble
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
+ENV ROS_DOMAIN_ID=0
+ENV PYTHONUNBUFFERED=1
+
+WORKDIR /ros2_ws
+SHELL ["/bin/bash", "-c"]
+
+# -----------------------------
+# System dependencies
+# -----------------------------
+RUN apt-get update && apt-get install -y \
+    ros-humble-rmw-cyclonedds-cpp \
+    git \
+    build-essential \
+    python3-pip \
+    python3-colcon-common-extensions \
+    python3-rosdep \
+    python3-argcomplete \
+    libgl1 \
+    libglib2.0-0 \
+    pkg-config \
+    ros-humble-rmw-cyclonedds-cpp \
+    ros-humble-navigation2 \
+    ros-humble-nav2-bringup \
+    ros-humble-slam-toolbox \
+    ros-humble-rviz2 \
+    ros-humble-cv-bridge \
+    ros-humble-vision-opencv \
+    ros-humble-image-transport \
+    ros-humble-pcl-ros \
+    ros-humble-pointcloud-to-laserscan \
+    ros-humble-moveit \
+    ros-humble-moveit-ros-planning \
+    ros-humble-moveit-ros-move-group \
+    ros-humble-moveit-ros-visualization \
+    ros-humble-moveit-planners \
+    ros-humble-moveit-ros-perception \
+    ros-humble-moveit-simple-controller-manager \
+    ros-humble-ros2-control \
+    ros-humble-ros2-controllers \
+    && rm -rf /var/lib/apt/lists/*
+
+
+
+
+# -----------------------------
+# rosdep setup (ONLY ONCE)
+# -----------------------------
+RUN rosdep init || true && rosdep update
+
+# -----------------------------
+# Python dependencies
+# -----------------------------
+RUN pip3 install --no-cache-dir \
+    flask \
+    flask-cors \
+    scipy \
+    transforms3d \
+    requests \
+    numpy==1.26.4 \
+    webrtcvad
+
+# -----------------------------
+# Workspace setup
+# -----------------------------
+WORKDIR /ros2_ws
+
+# IMPORTANT: must exist on host machine
+COPY ./src /ros2_ws/src
+
+# -----------------------------
+# Install dependencies
+# -----------------------------
+RUN apt-get update && apt-get install -y software-properties-common && \
+    add-apt-repository universe && \
+    apt-get update && \
+    rosdep install --from-paths src --ignore-src -r -y \
+    --skip-keys="festival festvox-kallpc16k"
+
+# -----------------------------
+# Build workspace
+# -----------------------------
+RUN source /opt/ros/humble/setup.bash && \
+    colcon build --symlink-install
+
+# -----------------------------
+# Default command
+# -----------------------------
+CMD ["bash"]
+
+
+new with moveit
+
+FROM ros:humble
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
+ENV ROS_DOMAIN_ID=0
+ENV PYTHONUNBUFFERED=1
+
+WORKDIR /ros2_ws
+SHELL ["/bin/bash", "-c"]
+
+# -----------------------------
+# System dependencies
+# -----------------------------
+RUN apt-get update && apt-get install -y \
+    git \
+    build-essential \
+    python3-pip \
+    python3-colcon-common-extensions \
+    python3-rosdep \
+    python3-vcstool \
+    python3-argcomplete \
+    python3-rosinstall-generator \
+    libgl1 \
+    libglib2.0-0 \
+    pkg-config \
+    wget \
+    curl \
+    software-properties-common \
+    && rm -rf /var/lib/apt/lists/*
+
+# -----------------------------
+# ROS core + navigation + MoveIt dependencies (APT base)
+# -----------------------------
+RUN apt-get update && apt-get install -y \
+    ros-humble-rmw-cyclonedds-cpp \
+    ros-humble-navigation2 \
+    ros-humble-nav2-bringup \
+    ros-humble-slam-toolbox \
+    ros-humble-rviz2 \
+    ros-humble-cv-bridge \
+    ros-humble-vision-opencv \
+    ros-humble-image-transport \
+    ros-humble-pcl-ros \
+    ros-humble-pointcloud-to-laserscan \
+    ros-humble-ros2-control \
+    ros-humble-ros2-controllers \
+    && rm -rf /var/lib/apt/lists/*
+
+# -----------------------------
+# rosdep
+# -----------------------------
+RUN rosdep init || true && rosdep update
+
+# -----------------------------
+# Python dependencies
+# -----------------------------
+RUN pip3 install --no-cache-dir \
+    flask flask-cors scipy transforms3d requests numpy==1.26.4 webrtcvad
+
+# -----------------------------
+# Workspace setup
+# -----------------------------
+WORKDIR /ros2_ws/src
+
+# -----------------------------
+# Clone MoveIt2 (Humble)
+# -----------------------------
+RUN git clone -b humble https://github.com/moveit/moveit2.git
+
+# -----------------------------
+# Import full MoveIt2 dependencies
+# -----------------------------
+RUN vcs import < moveit2/moveit2.repos
+
+# -----------------------------
+# Copy your ROS2 workspace
+# -----------------------------
+COPY ./src /ros2_ws/src/my_ws
+
+# -----------------------------
+# Install all dependencies (MoveIt + your packages)
+# -----------------------------
+WORKDIR /ros2_ws
+
+RUN apt-get update && \
+    rosdep install --from-paths src --ignore-src -r -y \
+    --rosdistro humble \
+    --skip-keys="festival festvox-kallpc16k" || true
+
+# -----------------------------
+# Build everything (MoveIt2 + workspace)
+# -----------------------------
+RUN source /opt/ros/humble/setup.bash && \
+    colcon build --symlink-install
+
+# -----------------------------
+# Default shell
+# -----------------------------
+CMD ["bash"]
