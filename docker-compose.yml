@@ -1,0 +1,106 @@
+version: "3.9"
+
+services:
+  uncom:
+    image: uncom:latest
+    build:
+      context: /home/Aathee/exchange/ichores_pipeline/src/uncom/uncom_reasoner
+      dockerfile: Dockerfile
+    network_mode: host
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ['1']
+              capabilities: [gpu]
+    environment:
+      - DISPLAY
+      - QT_X11_NO_MITSHM=1
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+      - /etc/localtime:/etc/localtime:ro
+      - /home/Aathee/exchange/ichores_pipeline/src/uncom/uncom_ws/src/arm_commander:/root/catkin_ws/src/arm_commander:rw
+      - /home/Aathee/exchange/ichores_pipeline/src/uncom/output:/root/output:rw
+      - /home/Aathee/exchange/ichores_pipeline/src/uncom/uncom_reasoner/models/hand_landmarker.task:/root/models/hand_landmarker.task:ro
+      - /home/Aathee/exchange/ichores_pipeline/src/uncom/uncom_reasoner/models:/root/.cache/huggingface:rw
+      - /home/Aathee/exchange/ichores_pipeline/src/uncom/uncom_reasoner/main.py:/root/main.py:ro
+      - /home/Aathee/exchange/ichores_pipeline/src/uncom/uncom_reasoner/uncom_utils:/root/uncom_utils:ro
+      - /home/Aathee/exchange/ichores_pipeline/src/uncom/uncom_reasoner/audio_transcribe_test.py:/root/audio_transcribe_test.py:ro
+      - /home/Aathee/exchange/ichores_pipeline/src/uncom/uncom_reasoner/audio_trascribe2.py:/root/audio_trascribe2.py:ro
+      - /home/Aathee/exchange/ichores_pipeline/src/uncom/uncom_reasoner/phi_test_keyboard.py:/root/phi_test_keyboard.py:ro
+      - /home/Aathee/exchange/ichores_pipeline/src/uncom/uncom_reasoner/audio_conv.py:/root/audio_conv.py:ro
+    command: ["/usr/bin/python3", "/root/audio_conv.py"]
+    stdin_open: true
+    tty: true
+
+
+  emotion:
+    image: emotion:v1
+    build:
+      context: /home/Aathee/exchange/emotion
+      dockerfile: docker/Dockerfile
+    network_mode: host
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ['1']
+              capabilities: [gpu]
+    environment:
+      - DISPLAY
+      - QT_X11_NO_MITSHM=1
+    devices:
+      - /dev/video0:/dev/video0
+      - /dev/video1:/dev/video1
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+      - /etc/localtime:/etc/localtime:ro
+      - /home/Aathee/exchange/emotion/src/emotion.py:/app/emotion.py:ro
+      - /home/Aathee/exchange/emotion/src/emotion_video.py:/app/emotion_video.py:ro
+      - /home/Aathee/exchange/emotion/src/fitbit.py:/app/fitbit.py:ro
+      - /home/Aathee/exchange/emotion/src/fitbit_main.py:/app/fitbit_main.py:ro
+      - /home/Aathee/exchange/emotion/src/heart_rate.csv:/app/heart_rate.csv:rw
+      - /home/Aathee/exchange/emotion/src/plot.py:/app/plot.py:ro
+      - /home/Aathee/exchange/emotion/src/client_secret.json:/app/client_secret.json:ro
+      - /home/Aathee/exchange/emotion/src/haarcascade_frontalface_default.xml:/app/haarcascade_frontalface_default.xml:ro
+      - /home/Aathee/exchange/emotion/src/emotion_test.mp4:/app/emotion_test.mp4:rw
+    command: ["/usr/bin/python3", "/app/emotion_video.py"]
+    stdin_open: true
+    tty: true
+    depends_on:
+      - ros2_nav_aud
+
+
+  ros2_nav_aud:
+    image: ros2_nav2_aud:latest2
+    build:
+      context: /home/Aathee/exchange/ros2_nav_aud
+      dockerfile: docker/Dockerfile
+    network_mode: host
+    runtime: nvidia
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+      - /etc/localtime:/etc/localtime:ro
+      - /home/Aathee/exchange/ros2_nav_aud/src:/ros2_ws/src:rw
+      - /home/Aathee/exchange/ros2_nav_aud/docker/cyclonedds.xml:/ros2_ws/cyclonedds.xml:ro
+    environment:
+      - DISPLAY
+      - QT_X11_NO_MITSHM=1
+      - RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
+      - ROS_MASTER_URI=${ROS_MASTER_URI}
+      - ROS_IP=${ROS_IP}
+      - ROS_DOMAIN_ID=67
+      - CYCLONEDDS_URI=file:///ros2_ws/cyclonedds.xml
+    command: >
+      bash -c "source /opt/ros/humble/setup.bash &&
+      cd /ros2_ws &&
+      colcon build --symlink-install &&
+      source /ros2_ws/install/setup.bash &&
+      ros2 launch my_vision_pkg aud_ros.launch.py"
+    stdin_open: true
+    tty: true
+
+
+
