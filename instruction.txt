@@ -1,0 +1,284 @@
+xhost +
+export ROS_MASTER_URI=http://10.68.0.1:11311
+export ROS_IP=10.68.0.128
+export DATASET=ycb_ichores
+export CONFIG=params_tiago_cracow.yaml
+export MODEL_HOST=ollama 
+
+#Wifi mode
+export ROS_MASTER_URI=http://192.168.1.75/74:11311
+export ROS_IP=192.168.1.175
+
+#wired mode /etc/hosts
+10.68.0.1
+#wireles /etc/hosts
+192.168.1.74 or 192.168.1.75 (check ifconfig inside robot)
+
+ssh -X pal@10.68.0.1
+
+ssh -X pal@192.168.1.75
+
+bridge container:
+
+docker run -it --net=host -e ROS_MASTER_URI=http://tiago-218c:11311 -e ROS_IP=10.68.0.128 my_ros_image bash
+#mounting
+docker run -it --net=host \
+  -e ROS_MASTER_URI=http://tiago-218c:11311 \
+  -e ROS_IP=10.68.0.128 \
+  -v /home/Aathee/exchange/handover/catkin_ws/src/handover/:/bridge_ws \
+  my_ros_image bash
+  
+  
+RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
+ros2 run ros1_bridge dynamic_bridge --bridge-all-topics
+
+#if ros2 topics not seen restart ros2
+ros2 daemon stop
+ros2 daemon start
+
+
+export ROS_MASTER_URI=http://10.68.0.1:11311
+
+
+docker run -it --rm --net=host --runtime=nvidia --name ros2_nav_aud -e DISPLAY=${DISPLAY} -e QT_X11_NO_MITSHM=1 -e ROS_MASTER_URI=${ROS_MASTER_URI:-http://192.168.1.75:11311} -e ROS_IP=${ROS_IP:-192.168.1.175} -e ROS_DOMAIN_ID=67 -e RMW_IMPLEMENTATION=rmw_cyclonedds_cpp -e CYCLONEDDS_URI=file:///ros2_ws/cyclonedds.xml -v /tmp/.X11-unix:/tmp/.X11-unix:rw -v /etc/localtime:/etc/localtime:ro -v /home/Aathee/exchange/ros2_nav_aud/src:/ros2_ws/src:rw -v /home/Aathee/exchange/ros2_nav_aud/docker/cyclonedds.xml:/ros2_ws/cyclonedds.xml:ro ros2_nav2_aud:latest2 bash
+
+docker run -it --rm --net=host --runtime=nvidia --name ros2_nav_aud -e DISPLAY=${DISPLAY} -e QT_X11_NO_MITSHM=1 -e ROS_MASTER_URI=${ROS_MASTER_URI:-http://10.68.0.1:11311} -e ROS_IP=${ROS_IP:-10.68.0.128} -e ROS_DOMAIN_ID=67 -e RMW_IMPLEMENTATION=rmw_cyclonedds_cpp-e CYCLONEDDS_URI='<CycloneDDS><Domain><General><NetworkInterfaceAddress>eno2</NetworkInterfaceAddress></General></Domain></CycloneDDS>' -v /tmp/.X11-unix:/tmp/.X11-unix:rw -v /etc/localtime:/etc/localtime:ro -v /home/Aathee/exchange/ros2_nav_aud/src:/ros2_ws/src:rw -v /home/Aathee/exchange/ros2_nav_aud/docker/cyclonedds.xml:/ros2_ws/cyclonedds.xml:ro ros2_nav2_aud:latest2 bash
+#working
+ls /sys/class/net
+
+docker run -it --rm --net=host --runtime=nvidia \
+-e DISPLAY=${DISPLAY} \
+-e QT_X11_NO_MITSHM=1 \
+-e ROS_DOMAIN_ID=67 \
+-e RMW_IMPLEMENTATION=rmw_cyclonedds_cpp \
+-e CYCLONEDDS_URI=/ros2_ws/cyclonedds.xml \
+-v /tmp/.X11-unix:/tmp/.X11-unix:rw \
+-v /etc/localtime:/etc/localtime:ro \
+-v /home/Aathee/exchange/ros2_nav_aud/src:/ros2_ws/src:rw \
+-v /home/Aathee/exchange/ros2_nav_aud/docker/cyclonedds.xml:/ros2_ws/cyclonedds.xml:ro \
+ros2_nav2_aud:latest3 bash
+
+
+simulation
+
+docker run -it --rm --net=host --runtime=nvidia \
+-e DISPLAY=${DISPLAY} \
+-e QT_X11_NO_MITSHM=1 \
+-e RMW_IMPLEMENTATION=rmw_cyclonedds_cpp \
+-e CYCLONEDDS_URI=/ros2_ws/cyclonedds.xml \
+-e ROS_DOMAIN_ID=67 \
+-v /tmp/.X11-unix:/tmp/.X11-unix:rw \
+-v /etc/localtime:/etc/localtime:ro \
+-v /home/Aathee/exchange/ros2_nav_aud/docker/cyclonedds.xml:/ros2_ws/cyclonedds.xml:ro \
+-v /home/Aathee/exchange/ros2_nav_aud_sim/src:/ros2_ws/src:rw \
+ros2_nav2_aud:latest3 bash
+
+
+WIFI container for ros2 container with nav2,aruco and everything
+
+docker run -it --rm --net=host --runtime=nvidia \
+-e DISPLAY=${DISPLAY} \
+-e QT_X11_NO_MITSHM=1 \
+-e ROS_DOMAIN_ID=67 \
+-e RMW_IMPLEMENTATION=rmw_cyclonedds_cpp \
+-e CYCLONEDDS_URI=/ros2_ws/cyclonedds_wifi.xml \
+-v /tmp/.X11-unix:/tmp/.X11-unix:rw \
+-v /etc/localtime:/etc/localtime:ro \
+-v /home/Aathee/exchange/ros2_nav_aud/src:/ros2_ws/src:rw \
+-v /home/Aathee/exchange/ros2_nav_aud/docker/cyclonedds_wifi.xml:/ros2_ws/cyclonedds_wifi.xml:rw \
+ros2_nav2_aud:latest3 bash
+
+
+
+
+docker run -it --rm --net=host --runtime=nvidia \
+--name aud_nav_ros2 \
+-e DISPLAY=${DISPLAY} \
+-e QT_X11_NO_MITSHM=1 \
+-e ROS_DOMAIN_ID=67 \
+-e RMW_IMPLEMENTATION=rmw_cyclonedds_cpp \
+-e CYCLONEDDS_URI='<CycloneDDS><Domain><General><NetworkInterfaceAddress>eno2</NetworkInterfaceAddress></General></Domain></CycloneDDS>' \
+-v /tmp/.X11-unix:/tmp/.X11-unix:rw \
+-v /etc/localtime:/etc/localtime:ro \
+-v /home/Aathee/exchange/ros2_nav_aud/src:/ros2_ws/src:rw \
+-v /home/Aathee/exchange/ros2_nav_aud/docker/cyclonedds.xml:/ros2_ws/cyclonedds.xml:ro \
+ros2_nav2_aud:latest3 bash
+
+
+conversation bot
+
+docker compose run uncom
+
+
+ros2 control list_controllers
+
+colcon build --symlink-install
+source /opt/ros/humble/setup.bash
+source /ros2_ws/install/setup.bash
+
+Moveit
+
+ros2 launch tiago_description robot_state_publisher.launch.py
+ros2 launch tiago_moveit_config move_group.launch.py  end_effector:=pal-gripper
+
+Gazeo
+ros2 launch tiago_gazebo tiago_gazebo.launch.py is_public_sim:=True world_name:=empty [arm_type:=tiago-arm] moveit:=True
+After gazebo for real robot
+
+ros2 param set /move_group use_sim_time false
+ros2 param set /robot_state_publisher use_sim_time false
+ros2 param set /controller_manager use_sim_time false
+
+
+Node running
+
+ros2 run my_vision_pkg moveit_arm
+ros2 run my_vision_pkg moveit_service
+ros2 run my_vision_pkg audio_rec.py
+ros2 run my_vision_pkg table_detect.py
+ros2 run my_vision_pkg marker_align.py
+
+
+gripper control
+
+ros2 action send_goal /gripper_controller/follow_joint_trajectory control_msgs/action/FollowJointTrajectory "{trajectory: {
+  joint_names: ['gripper_right_finger_joint','gripper_left_finger_joint'],
+  points: [
+    {
+      positions: [0.02, 0.02],
+      time_from_start: {sec: 1}
+    }
+  ]
+}}"
+
+
+-- 0.05 open
+
+ros2 topic pub /moveit_goal geometry_msgs/msg/PoseStamped "{
+header: {frame_id: 'base_link'},
+pose: {
+  position: {x: 0.3, y: 0.1, z: 0.5},
+  orientation: {w: 1.0}
+}
+}"
+
+ros2 topic pub --once /moveit_goal geometry_msgs/msg/PoseStamped "{
+header: {frame_id: 'base_link'},
+pose: {
+  position: {x: 0.3, y: 0.1, z: 0.5},
+  orientation: {w: 1.0}
+}
+}"
+
+
+ros2 topic pub /key_vel geometry_msgs/msg/Twist \
+"{linear: {x: 0.2}, angular: {z: 0.0}}" -r 10
+
+ros2 topic pub /head_controller/joint_trajectory trajectory_msgs/msg/JointTrajectory "{
+joint_names: ['head_1_joint','head_2_joint'],
+points: [{positions: [0.0, -0.2], time_from_start: {sec: 1}}]
+}"
+
+
+Nav2 (Mapping + Navigation)
+
+ros2 run key_teleop key_teleop --ros-args -r cmd_vel:=/key_vel (teleop using keyboard)
+
+ros2 launch slam_toolbox online_async_launch.py use_sim_time:=false
+
+ros2 run nav2_map_server map_saver_cli -f my_map2
+
+copy map to Tiago local
+
+scp /home/Aathee/exchange/ros2_nav_aud/src/my_vision_pkg/my_map.yaml /home/Aathee/exchange/ros2_nav_aud/src/my_vision_pkg/my_map.pgm pal@10.68.0.1:~/
+
+scp /home/Aathee/map_full_lab.yaml /home/Aathee/map_full_lab.yaml.pgm pal@192.168.1.75:~/
+
+--------------------------change pgm path inside yaml--------
+
+Nav2: --------------Start rviz2 first------
+
+ros2 launch nav2_bringup bringup_launch.py map:=./my_map2.yaml
+
+ros2 launch nav2_bringup bringup_launch.py map:=/ros2_ws/map_full_lab.yaml
+
+ros2 service call /map_server/load_map nav2_msgs/srv/LoadMap "map_url: '/home/pal/map_full_lab.yaml'" (inside tiago)
+sometimes: remove trinary mode
+
+#Nav2 Goal
+
+ros2 action send_goal /navigate_to_pose nav2_msgs/action/NavigateToPose "{pose: {header: {frame_id: 'map'}, pose: {position: {x: 0.8494439, y: -0.5617015, z: 0.0}, orientation: {w: 1.0}}}}"
+
+ros2 action send_goal /navigate_to_pose nav2_msgs/action/NavigateToPose "{
+pose: {
+  header: {
+    frame_id: 'map'
+  },
+  pose: {
+    position: {
+      x: 1.8552146673202515,
+      y: -0.40459001064300537,
+      z: 0.0
+    },
+    orientation: {
+      w: 1.0
+    }
+  }
+}}"
+
+
+
+Tiago inbuilt motions:
+
+/ros2_ws# ros2 action send_goal /play_motion2 play_motion2_msgs/action/PlayMotion2 "{motion_name: 'home'}"
+
+-home,wave,prepare_grasp
+
+Changing Permissions
+
+sudo chown -R Aathee:users /home/Aathee/exchange/ros2_nav_aud/src/ros2_aruco
+[INFO] [1781255160.960424631] [aruco_node]: Marker ID 5 -> x: -0.037, y: -0.151, z: 0.417
+
+Aruco
+
+ros2 run ros2_aruco aruco_generate_marker --id 4 --size 130 (Generate Marker)
+
+ros2 run ros2_aruco aruco_node --ros-args -p image_topic:=/head_front_camera/rgb/image_raw -p camera_info_topic:=/head_front_camera/rgb/camera_info
+
+
+
+
+Emotion:container
+
+docker run -it \
+  --network host \
+  --gpus 'device=1' \
+  -e DISPLAY=$DISPLAY \
+  -e QT_X11_NO_MITSHM=1 \
+  -v /tmp/.X11-unix:/tmp/.X11-unix:rw \
+  -v /etc/localtime:/etc/localtime:ro \
+  -v /home/Aathee/exchange/emotion/src/emotion.py:/app/emotion.py:ro \
+  -v /home/Aathee/exchange/emotion/src/emotion_video.py:/app/emotion_video.py:ro \
+  -v /home/Aathee/exchange/emotion/src/fitbit.py:/app/fitbit.py:ro \
+  -v /home/Aathee/exchange/emotion/src/fitbit_main.py:/app/fitbit_main.py:ro \
+  -v /home/Aathee/exchange/emotion/src/heart_rate.csv:/app/heart_rate.csv:rw \
+  -v /home/Aathee/exchange/emotion/src/plot.py:/app/plot.py:ro \
+  -v /home/Aathee/exchange/emotion/src/client_secret_461691553363-o8tldjjnhkto4thldq785f13tiir90jg.apps.googleusercontent.com.json:/app/client_secret_461691553363-o8tldjjnhkto4thldq785f13tiir90jg.apps.googleusercontent.com.json:ro \
+  -v /home/Aathee/exchange/emotion/src/haarcascade_frontalface_default.xml:/app/haarcascade_frontalface_default.xml:ro \
+  -v /home/Aathee/exchange/emotion/src/emotion_test.mp4:/app/emotion_test.mp4:rw \
+  -v /home/Aathee/exchange/emotion/src/emotion_test_1.mp4:/app/emotion_test_1.mp4:rw \
+  emotion:v1
+
+$ docker cp nervous_nobel:/ros2_ws/map_full_lab.pgm /home/Aathee/
+$ docker cp nervous_nobel:/ros2_ws/map_full_lab.yaml /home/Aathee/
+$ docker cp emotion://Figure_2.png /home/Aathee/
+map_full_lab.pgm
+Speech Tiago:
+
+ros2 action send_goal /tts_engine/tts tts_msgs/action/TTS "{locale: 'en_US', input: 'Thello'}"
+
+
+permission
+
+sudo chown -R Aathee:users /home/aathee/exchange/ros2_nav_aud
+
