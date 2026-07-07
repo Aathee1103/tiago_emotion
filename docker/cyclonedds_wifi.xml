@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CycloneDDS xmlns="https://cyclonedds.io/xml">
+
+  <Domain Id="any">
+
+    <General>
+
+      <Interfaces>
+        <NetworkInterface name="wlp9s0" priority="10"/>
+      </Interfaces>
+
+      <AllowMulticast>true</AllowMulticast>
+
+      <!-- IMPORTANT: force single interface behavior -->
+      <DontRoute>true</DontRoute>
+
+    </General>
+
+    <Discovery>
+      <ParticipantIndex>auto</ParticipantIndex>
+      <MaxAutoParticipantIndex>100</MaxAutoParticipantIndex>
+    </Discovery>
+
+    <Tracing>
+      <Verbosity>config</Verbosity>
+      <OutputFile>/tmp/cdds.log</OutputFile>
+    </Tracing>
+
+  </Domain>
+
+</CycloneDDS>
